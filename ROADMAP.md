@@ -1,10 +1,11 @@
 # Despensa roadmap
 
-| Version | Planned scope |
-| --- | --- |
-| V0.2 | Track pantry inventory and quantities on hand. |
-| V0.3 | Record grocery purchases. |
-| V0.4 | Recommend meals using available ingredients. |
-| V0.5 | Calculate recipe costs and record inventory consumption. |
-| V0.6 | Scan grocery receipts. |
-| V0.7 | Add optional meal planning. |
+| Version | Status | Scope |
+| --- | --- | --- |
+| V0.1 | Implemented | Recipe manager and Despensa branding |
+| V0.2 | Implemented | Persistent pantry inventory, batches, expiration and stock filters |
+| V0.3 | Planned | Deterministic recipe availability matching and compatible unit conversion |
+| V0.4 | Planned | Grocery purchase planning based on missing ingredients |
+| V0.5 | Planned | Recipe costs and explicit inventory consumption |
+| V0.6 | Planned | Receipt scanning |
+| V0.7 | Planned | Optional meal planning |

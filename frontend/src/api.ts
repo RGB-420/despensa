@@ -22,10 +22,10 @@ export interface Recipe extends RecipeInput {
   updated_at: string
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+export async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let response: Response
   try {
-    response = await fetch('/api/recipes' + path, options)
+    response = await fetch('/api' + path, options)
   } catch (error) {
     if (options?.signal?.aborted) throw error
     throw new Error('Could not reach Despensa. Check that the backend is running.')
@@ -35,7 +35,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await response.json().catch(() => null)
     if (typeof body?.detail === 'string') throw new Error(body.detail)
     if (response.status === 422) {
-      throw new Error('Check the recipe fields and ingredient values, then try again.')
+      throw new Error('Revisa los campos y los valores introducidos.')
     }
     throw new Error('Despensa could not complete the request. Check that the backend is running and try again.')
   }
@@ -44,12 +44,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const listRecipes = (query: string, signal: AbortSignal) =>
-  request<Recipe[]>('?' + new URLSearchParams({ q: query }), { signal })
+  request<Recipe[]>('/recipes?' + new URLSearchParams({ q: query }), { signal })
 
-export const getRecipe = (id: number) => request<Recipe>('/' + id)
+export const getRecipe = (id: number) => request<Recipe>('/recipes/' + id)
 
 export function saveRecipe(data: RecipeInput, id?: number) {
-  return request<Recipe>(id === undefined ? '' : '/' + id, {
+  return request<Recipe>(id === undefined ? '/recipes' : '/recipes/' + id, {
     method: id === undefined ? 'POST' : 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -57,7 +57,7 @@ export function saveRecipe(data: RecipeInput, id?: number) {
 }
 
 export const deleteRecipe = (id: number) =>
-  request<void>('/' + id, { method: 'DELETE' })
+  request<void>('/recipes/' + id, { method: 'DELETE' })
 
 export const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : 'Something went wrong. Please try again.'

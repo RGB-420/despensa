@@ -8,7 +8,9 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import Session
 
-from .models import Base, Recipe
+from .inventory import inventory_router
+from .migrations import migrate_database
+from .models import Recipe
 from .schemas import RecipeInput, RecipeResponse
 
 DATABASE_PATH = Path(__file__).resolve().parents[1] / "data" / "pantrylab.sqlite3"
@@ -21,17 +23,19 @@ def create_app(database_path: Path = DATABASE_PATH) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         database_path.parent.mkdir(parents=True, exist_ok=True)
-        Base.metadata.create_all(engine)
+        migrate_database(engine)
         try:
             yield
         finally:
             engine.dispose()
 
-    app = FastAPI(title="Despensa", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Despensa", version="0.2.0", lifespan=lifespan)
 
     def get_session():
         with Session(engine, expire_on_commit=False) as session:
             yield session
+
+    app.include_router(inventory_router(get_session))
 
     def find_recipe(recipe_id: int, session: Session) -> Recipe:
         recipe = session.get(Recipe, recipe_id)

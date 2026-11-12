@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { deleteRecipe, errorMessage, getRecipe, listRecipes, type Recipe } from './api'
 import RecipeForm from './RecipeForm'
+import Inventory from './Inventory'
 
 type View =
   | { page: 'list' | 'create' }
@@ -8,7 +9,7 @@ type View =
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 
-export default function App() {
+function RecipeManager() {
   const [view, setView] = useState<View>({ page: 'list' })
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [query, setQuery] = useState('')
@@ -63,13 +64,7 @@ export default function App() {
 
   return (
     <>
-      <header className="site-header">
-        <div className="shell">
-          <span className="brand">Despensa</span>
-          <span className="muted">Recipe notebook</span>
-        </div>
-      </header>
-      <main className="shell">
+
         {page === 'list' && (
           <>
             <div className="heading">
@@ -141,6 +136,28 @@ export default function App() {
               onCancel={() => navigate(view.page === 'edit' ? { page: 'detail', recipe: view.recipe } : { page: 'list' })} />
           </>
         )}
+    </>
+  )
+}
+
+
+export default function App() {
+  const [section, setSection] = useState<'recipes' | 'inventory'>('recipes')
+  return (
+    <>
+      <header className="site-header">
+        <div className="shell">
+          <span className="brand">Despensa</span>
+          <nav className="actions" aria-label="Secciones">
+            <button className={section === 'recipes' ? '' : 'secondary'} aria-current={section === 'recipes' ? 'page' : undefined}
+              onClick={() => setSection('recipes')}>Recetas</button>
+            <button className={section === 'inventory' ? '' : 'secondary'} aria-current={section === 'inventory' ? 'page' : undefined}
+              onClick={() => setSection('inventory')}>Mi despensa</button>
+          </nav>
+        </div>
+      </header>
+      <main className="shell">
+        {section === 'recipes' ? <RecipeManager /> : <Inventory />}
       </main>
     </>
   )
