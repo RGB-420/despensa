@@ -1,6 +1,6 @@
 # Despensa
 
-Despensa is a local personal kitchen application with a recipe manager, pantry inventory, and a deterministic recipe availability engine. It helps you record what you have and see which recipes have enough usable ingredients.
+Despensa is a local personal kitchen application with a recipe manager, pantry inventory, deterministic recipe availability, and persistent shopping lists. It helps you record what you have and see which recipes have enough usable ingredients.
 
 The frontend uses React, TypeScript, Vite, and plain CSS. The API uses Python, FastAPI, SQLAlchemy, and SQLite. Pytest covers the backend.
 
@@ -14,6 +14,14 @@ The frontend uses React, TypeScript, Vite, and plain CSS. The API uses Python, F
 - Filter availability by ready, almost ready, or missing ingredients. Sort by availability, number of ingredients still needed, or preparation time.
 - View required, available, and shortfall quantities for each ingredient.
 - Persist recipes and inventory with UTC creation and modification timestamps.
+
+## Shopping in V0.4
+
+Use **Lista de la compra** to create lists, select multiple recipes and desired servings, and add manual products. Calculations sum all selected recipes before subtracting usable inventory once. Planned requirements, manual entries, and actual purchase quantities are stored separately.
+
+Registering a purchase preserves inventory. Use **Añadir a mi despensa** and confirm a destination to transfer it. Compatible batches must share the normalized ingredient and expiration date. Ambiguous matches require a choice. Transfer and its record are committed atomically; repeating the request returns the existing transfer without adding stock again.
+
+Recalculation preserves manual items and purchase records. Untransferred, unexpired purchases count as shopping credit. Transferred purchases already count through inventory and receive no second credit. Shopping needs are rounded upward to six decimal places in base units. Removing a pending calculated item lasts until the next recalculation.
 
 ## Install on Windows
 
@@ -44,7 +52,7 @@ Set-Location frontend
 npm.cmd run dev
 ```
 
-Open [Despensa](http://localhost:5173) or [the API documentation](http://127.0.0.1:8765/docs). SQLite uses `backend/data/pantrylab.sqlite3`. Startup applies a repeatable, additive migration that creates the inventory table and records schema version 2. Existing recipes and their ingredients stay in place. V0.3 requires no further schema change.
+Open [Despensa](http://localhost:5173) or [the API documentation](http://127.0.0.1:8765/docs). SQLite uses `backend/data/pantrylab.sqlite3`. Startup applies a repeatable, additive migration that creates the inventory table and records schema version 4. Existing recipe and inventory rows stay in place. V0.4 adds shopping_lists and shopping_items.
 
 ## Try the main workflow
 
@@ -94,8 +102,7 @@ This app is intended for local, single-user use. Lists have no pagination. Alias
 
 | Version | Planned feature |
 | --- | --- |
-| V0.4 | Grocery purchase planning from recipe shortfalls |
-| V0.5 | Recipe costs and explicit inventory consumption |
+| V0.5 | Dashboard and visual experience |
 | V0.6 | Receipt scanning |
 | V0.7 | Optional meal planning |
 

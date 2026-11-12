@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, insert
 
 from pantrylab.main import create_app
 from pantrylab.models import Recipe
+from pantrylab.migrations import SCHEMA_VERSION
 
 
 def test_inventory_crud(client, inventory_item):
@@ -133,6 +134,6 @@ def test_repeatable_migration_preserves_legacy_recipes(tmp_path, recipe, invento
 
     engine = create_engine("sqlite:///" + database.as_posix())
     with engine.connect() as connection:
-        assert connection.exec_driver_sql("PRAGMA user_version").scalar_one() == 2
+        assert connection.exec_driver_sql("PRAGMA user_version").scalar_one() == SCHEMA_VERSION
     engine.dispose()
 

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from .availability import evaluate_recipes
 from .inventory import inventory_router
 from .migrations import migrate_database
+from .shopping import shopping_router
 from .models import InventoryItem, Recipe
 from .schemas import RecipeAvailability, RecipeInput, RecipeResponse
 
@@ -19,7 +20,7 @@ RecipeId = Annotated[int, PathParameter(gt=0, le=2**63 - 1)]
 
 
 def create_app(database_path: Path = DATABASE_PATH) -> FastAPI:
-    engine = create_engine(URL.create("sqlite", database=str(database_path)))
+    engine = create_engine(URL.create("sqlite", database=str(database_path)), connect_args={"timeout": 30})
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -30,13 +31,14 @@ def create_app(database_path: Path = DATABASE_PATH) -> FastAPI:
         finally:
             engine.dispose()
 
-    app = FastAPI(title="Despensa", version="0.3.0", lifespan=lifespan)
+    app = FastAPI(title="Despensa", version="0.4.0", lifespan=lifespan)
 
     def get_session():
         with Session(engine, expire_on_commit=False) as session:
             yield session
 
     app.include_router(inventory_router(get_session))
+    app.include_router(shopping_router(get_session))
 
     @app.get("/recipes/availability", response_model=list[RecipeAvailability], tags=["Recipe availability"])
     def get_availability(session: Session = Depends(get_session)):

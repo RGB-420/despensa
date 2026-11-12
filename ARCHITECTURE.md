@@ -20,7 +20,7 @@ The internal Python package and SQLite filename retain their original technical 
 
 Recipes keep their original table and ordered JSON ingredient array. Inventory entries represent individual products or batches. Each inventory row records a name, quantity, unit, optional expiration date and minimum stock, and UTC timestamps. Quantities and thresholds are validated as Decimal and stored as decimal text to avoid SQLite floating-point rounding. Dates use SQLAlchemy Date.
 
-Startup creates the recipe table when needed, adds `inventory_items`, and sets SQLite user_version to 2. Existing tables are never dropped or rewritten. Repeating the migration preserves recipe and inventory rows. A newer schema version is rejected. V0.3 uses the V0.2 schema.
+Startup creates the recipe table when needed, adds `inventory_items`, and sets SQLite user_version to 4. Existing tables are never dropped or rewritten. Repeating the migration preserves recipe and inventory rows. A newer schema version is rejected. V0.4 adds shopping_lists and shopping_items without changing existing recipe or inventory columns.
 
 ## Data flow
 
@@ -43,3 +43,16 @@ Comparisons use exact Decimal values without an epsilon or pre-comparison roundi
 A recipe is ready when every grouped ingredient is sufficient. It is almost ready when exactly one grouped ingredient has a shortfall and at least one other ingredient is sufficient. Remaining recipes are missing ingredients. Percentage equals sufficient groups divided by total groups times 100. Partial groups contribute zero to that score, with their quantities shown separately. A legacy empty recipe yields zero percent and missing ingredients; new recipes require at least one ingredient.
 
 Each recipe uses an independent view of stock. Browsing preserves inventory, and the service does not allocate stock across several recipes. The frontend filters and sorts the returned summaries and presents the ingredient breakdown.
+
+
+## Shopping calculation and purchase transfers
+
+ShoppingList stores its name, selected recipe snapshots with servings, requirement snapshots, and timestamps. ShoppingItem stores the manual/calculated source, planned quantity, actual purchase quantity and unit, expiration, and transfer timestamp and destination ID. Purchase details survive recalculation, recipe deletion, and transfer. Deliberately deleting a list removes its records while preserving stock already transferred.
+
+shopping_service.py reuses the V0.3 normalization, base-unit conversion, and usable-stock aggregation. It sums scaled recipe requirements by normalized name and measurement dimension, then deducts inventory once. Untransferred, unexpired purchases from that list are credited separately. Requirements round upward to six base-unit decimal places after aggregation. Incompatible stock remains separate and produces an explicit warning.
+
+Recalculation updates pending calculated items by ingredient key, removes obsolete pending calculated items, and preserves all manual and purchased items. Marking a partial purchase generates only its remaining shortfall. Unmarking merges pending calculated requirements back into one row.
+
+Every shopping mutation obtains SQLite BEGIN IMMEDIATE before reading mutable state. Transfer validates the recorded purchase and optional destination, creates or updates the batch, records the destination and transfer time, recalculates, and commits once. Exceptions roll the entire operation back. A transferred flag checked inside that transaction makes retries and concurrent requests idempotent. An already transferred purchase cannot be unmarked or edited.
+
+Batch merging requires equivalent names, compatible measurement dimensions, and exactly equal expiration dates, including undated batches. Multiple candidates require explicit selection. Converted stock must remain exactly representable within inventory limits; otherwise the API asks for a new batch in the purchase unit.

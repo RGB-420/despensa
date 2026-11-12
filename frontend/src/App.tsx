@@ -3,6 +3,7 @@ import { deleteRecipe, errorMessage, getRecipe, listRecipes, type Recipe } from 
 import RecipeForm from './RecipeForm'
 import Inventory from './Inventory'
 import Availability from './Availability'
+import Shopping from './Shopping'
 
 type View =
   | { page: 'list' | 'create' }
@@ -143,7 +144,7 @@ function RecipeManager() {
 
 
 export default function App() {
-  const [section, setSection] = useState<'recipes' | 'inventory' | 'availability'>('recipes')
+  const [section, setSection] = useState<'recipes' | 'inventory' | 'availability' | 'shopping'>('recipes')
   return (
     <>
       <header className="site-header">
@@ -156,6 +157,8 @@ export default function App() {
               onClick={() => setSection('inventory')}>Mi despensa</button>
             <button className={section === 'availability' ? '' : 'secondary'} aria-current={section === 'availability' ? 'page' : undefined}
               onClick={() => setSection('availability')}>¿Qué puedo cocinar?</button>
+            <button className={section === 'shopping' ? '' : 'secondary'} aria-current={section === 'shopping' ? 'page' : undefined}
+              onClick={() => setSection('shopping')}>Lista de la compra</button>
           </nav>
         </div>
       </header>
@@ -163,6 +166,7 @@ export default function App() {
         {section === 'recipes' && <RecipeManager />}
         {section === 'inventory' && <Inventory />}
         {section === 'availability' && <Availability />}
+        {section === 'shopping' && <Shopping />}
       </main>
     </>
   )

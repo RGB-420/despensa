@@ -59,3 +59,27 @@ Names follow the explicit rules in [ARCHITECTURE.md](ARCHITECTURE.md). Both reci
 ## Responses
 
 Creates return 201, reads and updates return 200, and deletes return 204. Missing IDs return 404 and invalid fields or filters return 422. Errors use FastAPI's `detail` field. Each saved object includes an ID and UTC creation and modification timestamps.
+
+
+## Shopping lists
+
+| Method | Backend path | Purpose |
+| --- | --- | --- |
+| GET / POST | /shopping-lists | List or create lists |
+| GET / PUT / DELETE | /shopping-lists/{id} | Read, update name and recipe selections, or delete a list |
+| POST | /shopping-lists/{id}/recalculate | Recalculate combined recipe shortfalls |
+| POST | /shopping-lists/{id}/items | Add a manual product |
+| PUT / DELETE | /shopping-lists/{id}/items/{item_id} | Edit a pending manual item or remove a pending item |
+| PUT | /shopping-lists/{id}/items/{item_id}/purchase | Record or unmark a purchase |
+| GET | /shopping-lists/{id}/items/{item_id}/transfer-options | Read compatible inventory destinations |
+| POST | /shopping-lists/{id}/items/{item_id}/transfer | Explicitly transfer the recorded purchase |
+
+List writes accept name and selected_recipes, an array of recipe_id and optional desired servings. Empty selections allow manual-only lists. Duplicate recipe selections are rejected. Updates replace the selection and recalculate while preserving manual and purchased items.
+
+Manual item writes accept name, a positive quantity, and unit. Purchase writes accept purchased=true, actual quantity, unit, and optional expiration_date. Unmark with purchased=false alone. Purchase units must be compatible with the planned item's measurement dimension. Quantities follow inventory precision and range limits.
+
+Transfer accepts inventory_item_id for an existing compatible batch, create_new_batch=true for a separate batch, or an empty object for automatic resolution when unambiguous. Multiple matches return 409 with code ambiguous_inventory and candidate_ids. Different dates or incompatible units return 409. Repeated transfers return the saved result without adding stock. A purchase already transferred cannot be modified or unmarked.
+
+Responses include selected recipe snapshots, combined requirements, items with planned and purchased quantities, pending/purchased/transferred counts, is_complete, and timestamps. A nonempty list is complete when every item is purchased; transferring is a separate state. Calculations are refreshed explicitly and after purchase changes or transfers. Expired untransferred purchases are excluded from shopping credit.
+
+All shopping mutations are transactional. A failure rolls back inventory and purchase changes together. Missing lists, items, or selected recipe IDs return 404. A selected recipe deleted after list creation produces 409 on recalculation until the selection is updated. Explicit list deletion preserves existing transferred inventory.

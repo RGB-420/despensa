@@ -82,6 +82,13 @@ def evaluate_recipes(
     # Keep full precision even when legacy recipes use very large or small floats.
     with localcontext() as context:
         context.prec = 700
+        stock = build_stock(inventory, today)
+        return [evaluate_recipe(recipe, stock, today) for recipe in recipes]
+
+
+def build_stock(inventory: Iterable[InventoryItem], today: date) -> dict[tuple[str, str], Decimal]:
+    with localcontext() as context:
+        context.prec = 700
         stock: dict[tuple[str, str], Decimal] = defaultdict(Decimal)
         for item in inventory:
             if item.expiration_date is not None and item.expiration_date < today:
@@ -90,4 +97,4 @@ def evaluate_recipes(
                 continue
             quantity, base_unit = to_base_quantity(Decimal(item.quantity), item.unit)
             stock[(normalize_ingredient(item.name), base_unit)] += quantity
-        return [evaluate_recipe(recipe, stock, today) for recipe in recipes]
+        return stock

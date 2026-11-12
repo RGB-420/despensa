@@ -33,6 +33,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
 
   if (!response.ok) {
     const body = await response.json().catch(() => null)
+    if (typeof body?.detail?.message === 'string') throw new Error(body.detail.message)
     if (typeof body?.detail === 'string') throw new Error(body.detail)
     if (response.status === 422) {
       throw new Error('Revisa los campos y los valores introducidos.')

@@ -9,7 +9,7 @@ interface InventoryInput {
   minimum_stock: string | null
 }
 
-interface InventoryItem extends InventoryInput {
+export interface InventoryItem extends InventoryInput {
   id: number
   created_at: string
   updated_at: string
