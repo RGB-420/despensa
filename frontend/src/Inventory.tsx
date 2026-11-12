@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { amount, formatDate, unitLabel } from './format'
+import { PageHeader, LoadingState, Icon } from './ui'
 import { errorMessage, request, units, type Unit } from './api'
 
 interface InventoryInput {
@@ -15,10 +17,6 @@ export interface InventoryItem extends InventoryInput {
   updated_at: string
   expiration_status: 'expired' | 'expiring_soon' | 'fresh' | 'no_date'
   stock_status: 'out_of_stock' | 'low_stock' | 'in_stock'
-}
-
-export function formatQuantity(value: string) {
-  return value.includes('.') && !/[eE]/.test(value) ? value.replace(/0+$/, '').replace(/\.$/, '') : value
 }
 
 function InventoryForm({ item, onSave, onCancel }: {
@@ -62,7 +60,7 @@ function InventoryForm({ item, onSave, onCancel }: {
 
   return (
     <>
-      <h1>{item ? 'Editar producto' : 'Añadir producto'}</h1>
+      <PageHeader title={item ? 'Editar producto' : 'Añadir producto'} description="Guarda su cantidad y fecha para organizar mejor tu despensa." />
       <form className="panel recipe-form" onSubmit={submit}>
         <fieldset disabled={saving}>
           <legend>Producto o lote</legend>
@@ -76,7 +74,7 @@ function InventoryForm({ item, onSave, onCancel }: {
             </label>
             <label>Unidad
               <select name="unit" defaultValue={item?.unit ?? 'g'}>
-                {units.map((unit) => <option key={unit}>{unit}</option>)}
+                {units.map((unit) => <option key={unit} value={unit}>{unitLabel(unit)}</option>)}
               </select>
             </label>
           </div>
@@ -98,13 +96,15 @@ function InventoryForm({ item, onSave, onCancel }: {
   )
 }
 
-export default function Inventory() {
-  const [mode, setMode] = useState<'list' | 'form'>('list')
+export default function Inventory({ initialCreate = false, initialExpiration = 'all', initialStock = 'all' }: {
+  initialCreate?: boolean; initialExpiration?: string; initialStock?: string
+}) {
+  const [mode, setMode] = useState<'list' | 'form'>(initialCreate ? 'form' : 'list')
   const [editing, setEditing] = useState<InventoryItem | null>(null)
   const [items, setItems] = useState<InventoryItem[]>([])
   const [query, setQuery] = useState('')
-  const [expiration, setExpiration] = useState('all')
-  const [stock, setStock] = useState('all')
+  const [expiration, setExpiration] = useState(initialExpiration)
+  const [stock, setStock] = useState(initialStock)
   const [refresh, setRefresh] = useState(0)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -156,10 +156,9 @@ export default function Inventory() {
 
   return (
     <>
-      <div className="heading">
-        <div><h1>Mi despensa</h1><p className="muted">Productos, cantidades y fechas de caducidad.</p></div>
-        <button disabled={busy} onClick={() => { setEditing(null); setMode('form') }}>Añadir producto</button>
-      </div>
+      <PageHeader title="Mi despensa" description="Productos y lotes, con sus cantidades y caducidades.">
+        <button disabled={busy} onClick={() => { setEditing(null); setMode('form') }}><Icon name="plus" />Añadir producto</button>
+      </PageHeader>
       <div className="filters">
         <label>Buscar producto
           <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
@@ -168,7 +167,7 @@ export default function Inventory() {
           <select value={expiration} onChange={(event) => setExpiration(event.target.value)}>
             <option value="all">Todas las fechas</option>
             <option value="expired">Caducados</option>
-            <option value="expiring_soon">Caducan en 7 días</option>
+            <option value="expiring_soon">Caducan pronto</option>
             <option value="not_expired">Sin caducar</option>
             <option value="no_date">Sin fecha</option>
           </select>
@@ -183,7 +182,7 @@ export default function Inventory() {
         </label>
       </div>
       <p className="muted">Cada entrada representa un producto o lote. Las cantidades cero indican productos agotados.</p>
-      {(loading || busy) && <p role="status">{busy ? 'Actualizando…' : 'Cargando productos…'}</p>}
+      {(loading || busy) && <LoadingState text={busy ? 'Actualizando…' : 'Cargando productos…'} />}
       {error && <div className="error" role="alert"><p>{error}</p>
         <button className="secondary" onClick={() => setRefresh((count) => count + 1)}>Reintentar</button>
       </div>}
@@ -192,9 +191,9 @@ export default function Inventory() {
           {items.map((item) => (
             <li className="panel" key={item.id}>
               <h2>{item.name}</h2>
-              <p className="quantity">{formatQuantity(item.quantity)} {item.unit}</p>
-              <p>Caducidad {item.expiration_date ?? 'sin fecha'}</p>
-              {item.minimum_stock !== null && <p className="muted">Mínimo {formatQuantity(item.minimum_stock)} {item.unit}</p>}
+              <p className="quantity">{amount(item.quantity, item.unit)}</p>
+              <p className="product-caption">Caducidad {item.expiration_date ? formatDate(item.expiration_date) : 'sin fecha'}</p>
+              {item.minimum_stock !== null && <p className="muted">Mínimo {amount(item.minimum_stock, item.unit)}</p>}
               <div className="badges">
                 {item.expiration_status === 'expired' && <span className="badge warning">Caducado</span>}
                 {item.expiration_status === 'expiring_soon' && <span className="badge warning">Caduca pronto</span>}
@@ -202,8 +201,8 @@ export default function Inventory() {
                 {item.stock_status === 'low_stock' && <span className="badge warning">Existencias bajas</span>}
               </div>
               <div className="actions">
-                <button className="secondary" disabled={busy} onClick={() => edit(item)}>Editar {item.name}</button>
-                <button className="danger" disabled={busy} onClick={() => remove(item)}>Eliminar {item.name}</button>
+                <button className="secondary" disabled={busy} onClick={() => edit(item)} aria-label={'Editar ' + item.name}>Editar</button>
+                <button className="danger" disabled={busy} onClick={() => remove(item)} aria-label={'Eliminar ' + item.name}>Eliminar</button>
               </div>
             </li>
           ))}

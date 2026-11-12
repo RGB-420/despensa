@@ -28,7 +28,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
     response = await fetch('/api' + path, options)
   } catch (error) {
     if (options?.signal?.aborted) throw error
-    throw new Error('Could not reach Despensa. Check that the backend is running.')
+    throw new Error('No se ha podido conectar con Despensa. Comprueba que la aplicación esté en marcha.')
   }
 
   if (!response.ok) {
@@ -38,7 +38,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
     if (response.status === 422) {
       throw new Error('Revisa los campos y los valores introducidos.')
     }
-    throw new Error('Despensa could not complete the request. Check that the backend is running and try again.')
+    throw new Error('Despensa no ha podido completar la acción. Vuelve a intentarlo.')
   }
   if (response.status === 204) return undefined as T
   return response.json()
@@ -47,7 +47,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
 export const listRecipes = (query: string, signal: AbortSignal) =>
   request<Recipe[]>('/recipes?' + new URLSearchParams({ q: query }), { signal })
 
-export const getRecipe = (id: number) => request<Recipe>('/recipes/' + id)
+export const getRecipe = (id: number, signal?: AbortSignal) => request<Recipe>('/recipes/' + id, { signal })
 
 export function saveRecipe(data: RecipeInput, id?: number) {
   return request<Recipe>(id === undefined ? '/recipes' : '/recipes/' + id, {
@@ -61,4 +61,4 @@ export const deleteRecipe = (id: number) =>
   request<void>('/recipes/' + id, { method: 'DELETE' })
 
 export const errorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : 'Something went wrong. Please try again.'
+  error instanceof Error ? error.message : 'No se ha podido completar la acción. Vuelve a intentarlo.'

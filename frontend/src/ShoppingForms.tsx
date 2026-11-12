@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { errorMessage, request, units, type Recipe } from './api'
-import { formatQuantity, type InventoryItem } from './Inventory'
+import type { InventoryItem } from './Inventory'
+import { amount, unitLabel } from './format'
 import type { ShoppingItem, ShoppingList } from './shoppingTypes'
 
 export function jsonOptions(method: string, data: unknown): RequestInit {
@@ -143,7 +144,7 @@ export function ItemForm({ list, item, purchase = false, onSave, onCancel }: For
           </label>
           <label>Unidad
             <select name="unit" defaultValue={purchase ? item?.purchased_unit ?? item?.unit : item?.unit ?? 'unit'}>
-              {units.map((unit) => <option key={unit}>{unit}</option>)}
+              {units.map((unit) => <option key={unit} value={unit}>{unitLabel(unit)}</option>)}
             </select>
           </label>
         </div>
@@ -197,7 +198,7 @@ export function TransferForm({ list, item, onSave, onCancel }: FormActions & {
     <form className="panel recipe-form" onSubmit={submit}>
       <fieldset disabled={saving || loading}>
         <legend>Añadir a mi despensa</legend>
-        <p><strong>{item.name}</strong> · {formatQuantity(item.purchased_quantity!)} {item.purchased_unit}</p>
+        <p><strong>{item.name}</strong> · {amount(item.purchased_quantity!, item.purchased_unit!)}</p>
         <p>Caducidad {item.expiration_date ?? 'sin fecha'}</p>
         <p className="muted">Confirma dónde guardar esta compra. Solo se añadirá una vez.</p>
         {loading && <p role="status">Buscando lotes compatibles…</p>}
@@ -207,7 +208,7 @@ export function TransferForm({ list, item, onSave, onCancel }: FormActions & {
             <option value="new">Crear un lote nuevo</option>
             {options.map((option) => (
               <option key={option.id} value={option.id}>
-                {option.name} · {formatQuantity(option.quantity)} {option.unit} · {option.expiration_date ?? 'sin fecha'} · Lote {option.id}
+                {option.name} · {amount(option.quantity, option.unit)} · {option.expiration_date ?? 'sin fecha'} · Lote {option.id}
               </option>
             ))}
           </select>

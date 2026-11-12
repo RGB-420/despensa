@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from . import config
 from .models import InventoryItem
 from .schemas import InventoryInput, InventoryResponse
 
@@ -20,7 +21,7 @@ def inventory_router(get_session) -> APIRouter:
     def find_item(item_id: int, session: Session) -> InventoryItem:
         item = session.get(InventoryItem, item_id)
         if item is None:
-            raise HTTPException(status_code=404, detail="Product not found.")
+            raise HTTPException(status_code=404, detail="El producto no existe.")
         return item
 
     @router.get("", response_model=list[InventoryResponse])
@@ -39,7 +40,7 @@ def inventory_router(get_session) -> APIRouter:
             expiration_matches = {
                 "all": True,
                 "expired": expires is not None and expires < today,
-                "expiring_soon": expires is not None and today <= expires <= today + timedelta(days=7),
+                "expiring_soon": expires is not None and today <= expires <= today + timedelta(days=config.EXPIRATION_WARNING_DAYS),
                 "not_expired": expires is None or expires >= today,
                 "no_date": expires is None,
             }

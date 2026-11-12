@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { unitLabel } from './format'
 import { errorMessage, saveRecipe, units, type Recipe, type Unit } from './api'
 
 interface IngredientRow {
@@ -37,7 +38,7 @@ export default function RecipeForm({ recipe, onSave, onCancel }: {
     const name = String(fields.get('name')).trim()
     const instructions = String(fields.get('instructions')).trim()
     if (!name || !instructions || ingredients.some((row) => !row.name.trim())) {
-      setError('Enter a recipe name, a name for each ingredient, and preparation instructions.')
+      setError('Escribe el nombre de la receta, de cada ingrediente y los pasos de preparación.')
       return
     }
 
@@ -65,62 +66,62 @@ export default function RecipeForm({ recipe, onSave, onCancel }: {
   return (
     <form className="panel recipe-form" onSubmit={handleSubmit}>
       <fieldset disabled={saving}>
-        <legend>Recipe basics</legend>
-        <label>Name
+        <legend>Datos de la receta</legend>
+        <label>Nombre
           <input name="name" required maxLength={120} defaultValue={recipe?.name} />
         </label>
-        <label>Description <span className="muted">(optional)</span>
+        <label>Descripción <span className="muted">(opcional)</span>
           <textarea name="description" rows={2} maxLength={2000} defaultValue={recipe?.description ?? ''} />
         </label>
         <div className="pair">
-          <label>Preparation time (min)
+          <label>Tiempo de preparación (min)
             <input name="preparation_minutes" type="number" required min={0} max={9999999} defaultValue={recipe?.preparation_minutes} />
           </label>
-          <label>Servings
+          <label>Raciones
             <input name="servings" type="number" required min={1} max={9999999} defaultValue={recipe?.servings ?? 1} />
           </label>
         </div>
       </fieldset>
       <fieldset disabled={saving}>
-        <legend>Ingredients</legend>
+        <legend>Ingredientes</legend>
         {ingredients.map((row, index) => (
           <div className="ingredient-row" key={row.key}>
-            <label className="ingredient-name">Ingredient {index + 1}
+            <label className="ingredient-name">Ingrediente {index + 1}
               <input required maxLength={120} value={row.name}
                 onChange={(event) => updateIngredient(row.key, { name: event.target.value })} />
             </label>
-            <label>Quantity
+            <label>Cantidad
               <input type="number" required min="0" step="any" value={row.quantity}
                 onChange={(event) => {
                   const input = event.currentTarget
-                  input.setCustomValidity(input.valueAsNumber <= 0 ? 'Enter a quantity greater than zero.' : '')
+                  input.setCustomValidity(input.valueAsNumber <= 0 ? 'Introduce una cantidad mayor que cero.' : '')
                   updateIngredient(row.key, { quantity: input.value })
                 }} />
             </label>
-            <label>Unit
+            <label>Unidad
               <select value={row.unit} onChange={(event) => updateIngredient(row.key, { unit: event.target.value as Unit })}>
-                {units.map((unit) => <option key={unit}>{unit}</option>)}
+                {units.map((unit) => <option key={unit} value={unit}>{unitLabel(unit)}</option>)}
               </select>
             </label>
             <button className="secondary" type="button" disabled={ingredients.length === 1}
-              aria-label={'Remove ingredient ' + (index + 1)}
-              onClick={() => setIngredients((rows) => rows.filter((item) => item.key !== row.key))}>Remove</button>
+              aria-label={'Quitar ingrediente ' + (index + 1)}
+              onClick={() => setIngredients((rows) => rows.filter((item) => item.key !== row.key))}>Quitar</button>
           </div>
         ))}
         <button className="secondary" type="button" onClick={() => setIngredients((rows) => [...rows, newIngredient()])}>
-          Add ingredient
+          Añadir ingrediente
         </button>
       </fieldset>
       <fieldset disabled={saving}>
-        <legend>Preparation</legend>
-        <label>Instructions
+        <legend>Preparación</legend>
+        <label>Instrucciones
           <textarea name="instructions" required rows={6} maxLength={20000} defaultValue={recipe?.instructions} />
         </label>
       </fieldset>
       {error && <p className="error" role="alert">{error}</p>}
       <div className="actions">
-        <button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save recipe'}</button>
-        <button type="button" className="secondary" disabled={saving} onClick={onCancel}>Cancel</button>
+        <button type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar receta'}</button>
+        <button type="button" className="secondary" disabled={saving} onClick={onCancel}>Cancelar</button>
       </div>
     </form>
   )

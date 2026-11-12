@@ -1,21 +1,24 @@
 import { useEffect, useState } from 'react'
 import { errorMessage, request } from './api'
-import { formatQuantity } from './Inventory'
+import { amount } from './format'
+import { PageHeader, Icon } from './ui'
 import { ItemForm, ListForm, TransferForm, jsonOptions } from './ShoppingForms'
 import type { ShoppingItem, ShoppingList } from './shoppingTypes'
 
 type Editor = { type: 'manual'; item: ShoppingItem | null }
   | { type: 'purchase' | 'transfer'; item: ShoppingItem }
 
-export default function Shopping() {
+export default function Shopping({ initialCreate = false, initialListId, initialFilter = 'all' }: {
+  initialCreate?: boolean; initialListId?: number; initialFilter?: 'pending' | 'all'
+}) {
   const [lists, setLists] = useState<ShoppingList[]>([])
   const [current, setCurrent] = useState<ShoppingList | null>(null)
-  const [mode, setMode] = useState<'lists' | 'detail' | 'settings'>('lists')
+  const [mode, setMode] = useState<'lists' | 'detail' | 'settings'>(initialCreate ? 'settings' : initialListId ? 'detail' : 'lists')
   const [editor, setEditor] = useState<Editor | null>(null)
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState<string>(initialFilter)
   const [refresh, setRefresh] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(Boolean(initialListId))
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -29,6 +32,17 @@ export default function Shopping() {
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [mode, refresh])
+
+
+  useEffect(() => {
+    if (initialListId === undefined) return
+    const controller = new AbortController()
+    request<ShoppingList>('/shopping-lists/' + initialListId, { signal: controller.signal })
+      .then((result) => { if (!controller.signal.aborted) saved(result) })
+      .catch((error) => { if (!controller.signal.aborted) setError(errorMessage(error)) })
+      .finally(() => { if (!controller.signal.aborted) setBusy(false) })
+    return () => controller.abort()
+  }, [initialListId])
 
   function saved(result: ShoppingList) {
     setCurrent(result)
@@ -66,7 +80,8 @@ export default function Shopping() {
   }
 
   if (mode === 'settings') {
-    return <ListForm list={current} onSave={saved} onCancel={() => setMode(current ? 'detail' : 'lists')} />
+    return <><PageHeader title={current ? 'Editar lista de compra' : 'Nueva lista de compra'} description="Reúne los ingredientes de tus recetas y añade lo que necesites." />
+      <ListForm list={current} onSave={saved} onCancel={() => setMode(current ? 'detail' : 'lists')} /></>
   }
   if (current && editor) {
     const actions = { list: current, onSave: saved, onCancel: () => setEditor(null) }
@@ -85,12 +100,13 @@ export default function Shopping() {
         <div><h1>{mode === 'detail' && current ? current.name : 'Lista de la compra'}</h1>
           <p className="muted">De tus recetas a la compra y de la compra a tu despensa.</p></div>
         {mode === 'lists'
-          ? <button disabled={busy} onClick={() => { setCurrent(null); setMode('settings') }}>Nueva lista</button>
+          ? <button disabled={busy} onClick={() => { setCurrent(null); setMode('settings') }}><Icon name="plus" />Nueva lista</button>
           : <button className="secondary" disabled={busy} onClick={() => { setCurrent(null); setMode('lists') }}>← Todas las listas</button>}
       </div>
       {error && <div className="error" role="alert"><p>{error}</p>
         <button className="secondary" disabled={busy} onClick={() => {
           if (current) void act(base)
+          else if (initialListId) void act('/shopping-lists/' + initialListId)
           else setRefresh((value) => value + 1)
         }}>Reintentar</button>
       </div>}
@@ -130,7 +146,7 @@ export default function Shopping() {
           <section className="panel shopping-overview" aria-label="Recetas seleccionadas">
             <h2>Recetas seleccionadas</h2>
             {current.selected_recipes.length
-              ? <ul>{current.selected_recipes.map((entry) => <li key={entry.recipe_id}>{entry.name} · {entry.servings} raciones</li>)}</ul>
+              ? <ul>{current.selected_recipes.map((entry) => <li key={entry.recipe_id}>{entry.name} · {entry.servings} {entry.servings === 1 ? 'ración' : 'raciones'}</li>)}</ul>
               : <p className="muted">Esta lista contiene productos añadidos manualmente.</p>}
             {current.requirements.length > 0 && (
               <details><summary>Ver cálculo conjunto de ingredientes</summary>
@@ -138,10 +154,10 @@ export default function Shopping() {
                   {current.requirements.map((requirement, index) => (
                     <li key={index}>
                       <strong>{requirement.name}</strong>
-                      <p>Necesitas {formatQuantity(requirement.required_quantity)} {requirement.unit}
-                        {' · '}En despensa {formatQuantity(requirement.available_quantity)} {requirement.unit}
-                        {' · '}Comprado sin transferir {formatQuantity(requirement.purchased_quantity)} {requirement.unit}
-                        {' · '}Faltan {formatQuantity(requirement.shortfall_quantity)} {requirement.unit}</p>
+                      <p>Necesitas {amount(requirement.required_quantity, requirement.unit)}
+                        {' · '}En despensa {amount(requirement.available_quantity, requirement.unit)}
+                        {' · '}Comprado sin transferir {amount(requirement.purchased_quantity, requirement.unit)}
+                        {' · '}Faltan {amount(requirement.shortfall_quantity, requirement.unit)}</p>
                       {requirement.warning && <p className="warning">{requirement.warning}</p>}
                     </li>
                   ))}
@@ -165,9 +181,9 @@ export default function Shopping() {
                     <li className="panel shopping-item" key={item.id}>
                       <div>
                         <h3>{item.name}</h3>
-                        <p>{formatQuantity(item.quantity)} {item.unit}
+                        <p>{amount(item.quantity, item.unit)}
                           {' · '}<span className="muted">{item.source === 'manual' ? 'Añadido a mano' : 'Calculado de recetas'}</span></p>
-                        {item.purchased_at && <p>Comprado {formatQuantity(item.purchased_quantity!)} {item.purchased_unit}
+                        {item.purchased_at && <p>Comprado {amount(item.purchased_quantity!, item.purchased_unit!)}
                           {' · '}Caducidad {item.expiration_date ?? 'sin fecha'}</p>}
                         <span className={'badge ' + (!item.purchased_at ? 'warning' : '')}>
                           {item.transferred_at ? 'Añadido a mi despensa' : item.purchased_at ? 'Comprado · pendiente de guardar' : 'Pendiente de compra'}
@@ -175,14 +191,14 @@ export default function Shopping() {
                       </div>
                       <div className="actions">
                         {!item.purchased_at && <>
-                          <button disabled={busy} onClick={() => setEditor({ type: 'purchase', item })}>Registrar compra de {item.name}</button>
+                          <button disabled={busy} onClick={() => setEditor({ type: 'purchase', item })} aria-label={'Registrar compra de ' + item.name}>Registrar compra</button>
                           {item.source === 'manual' && <button className="secondary" disabled={busy}
                             onClick={() => setEditor({ type: 'manual', item })}>Editar {item.name}</button>}
                           <button className="danger" disabled={busy} onClick={() => removeItem(item)}>Quitar {item.name}</button>
                         </>}
                         {item.purchased_at && !item.transferred_at && <>
                           <button disabled={busy} onClick={() => setEditor({ type: 'transfer', item })}>Añadir a mi despensa</button>
-                          <button className="secondary" disabled={busy} onClick={() => setEditor({ type: 'purchase', item })}>Modificar compra de {item.name}</button>
+                          <button className="secondary" disabled={busy} onClick={() => setEditor({ type: 'purchase', item })} aria-label={'Modificar compra de ' + item.name}>Modificar compra</button>
                           <button className="secondary" disabled={busy} onClick={() => act(base + '/items/' + item.id + '/purchase', jsonOptions('PUT', { purchased: false }))}>Desmarcar {item.name}</button>
                         </>}
                       </div>
@@ -193,7 +209,9 @@ export default function Shopping() {
             )
           })}
           {!visibleItems.length && <div className="panel empty"><h2>No hay productos pendientes en esta vista</h2>
-            <p>Añade productos, selecciona recetas o cambia el filtro.</p></div>}
+            <p>Añade productos, selecciona recetas o cambia el filtro.</p>
+            {current.purchased_count > 0 && <button className="secondary" onClick={() => setFilter('purchased')}>Ver productos comprados</button>}
+          </div>}
         </>
       )}
     </>

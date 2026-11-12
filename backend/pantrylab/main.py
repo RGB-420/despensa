@@ -9,6 +9,7 @@ from sqlalchemy.engine import URL
 from sqlalchemy.orm import Session
 
 from .availability import evaluate_recipes
+from .dashboard import dashboard_router
 from .inventory import inventory_router
 from .migrations import migrate_database
 from .shopping import shopping_router
@@ -31,7 +32,7 @@ def create_app(database_path: Path = DATABASE_PATH) -> FastAPI:
         finally:
             engine.dispose()
 
-    app = FastAPI(title="Despensa", version="0.4.0", lifespan=lifespan)
+    app = FastAPI(title="Despensa", version="0.5.0", lifespan=lifespan)
 
     def get_session():
         with Session(engine, expire_on_commit=False) as session:
@@ -39,6 +40,7 @@ def create_app(database_path: Path = DATABASE_PATH) -> FastAPI:
 
     app.include_router(inventory_router(get_session))
     app.include_router(shopping_router(get_session))
+    app.include_router(dashboard_router(get_session))
 
     @app.get("/recipes/availability", response_model=list[RecipeAvailability], tags=["Recipe availability"])
     def get_availability(session: Session = Depends(get_session)):
@@ -49,7 +51,7 @@ def create_app(database_path: Path = DATABASE_PATH) -> FastAPI:
     def find_recipe(recipe_id: int, session: Session) -> Recipe:
         recipe = session.get(Recipe, recipe_id)
         if recipe is None:
-            raise HTTPException(status_code=404, detail="Recipe not found.")
+            raise HTTPException(status_code=404, detail="La receta no existe.")
         return recipe
 
     @app.get("/recipes", response_model=list[RecipeResponse])

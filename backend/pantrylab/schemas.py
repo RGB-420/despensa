@@ -5,6 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints, computed_field, field_validator
 
+from . import config
 from .units import normalize_unit
 
 Unit = Annotated[Literal["g", "kg", "ml", "l", "unit"], BeforeValidator(normalize_unit)]
@@ -77,7 +78,7 @@ class InventoryResponse(InventoryInput):
         today = date.today()
         if self.expiration_date < today:
             return "expired"
-        if self.expiration_date <= today + timedelta(days=7):
+        if self.expiration_date <= today + timedelta(days=config.EXPIRATION_WARNING_DAYS):
             return "expiring_soon"
         return "fresh"
 

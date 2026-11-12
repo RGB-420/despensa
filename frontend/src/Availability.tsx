@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { errorMessage, request } from './api'
-import { formatQuantity } from './Inventory'
+import { amount, formatQuantity } from './format'
+import { PageHeader, LoadingState } from './ui'
 
 type Classification = 'ready_to_cook' | 'almost_ready' | 'missing_ingredients'
 
@@ -13,7 +14,7 @@ interface IngredientAvailability {
   status: 'available' | 'partial' | 'missing'
 }
 
-interface RecipeAvailability {
+export interface RecipeAvailability {
   recipe_id: number
   recipe_name: string
   preparation_minutes: number
@@ -30,7 +31,7 @@ interface RecipeAvailability {
   missing_or_insufficient_ingredients: IngredientAvailability[]
 }
 
-const classifications: Record<Classification, string> = {
+export const classifications: Record<Classification, string> = {
   ready_to_cook: 'Lista para cocinar',
   almost_ready: 'Casi lista',
   missing_ingredients: 'Faltan ingredientes',
@@ -43,13 +44,13 @@ function IngredientList({ ingredients }: { ingredients: IngredientAvailability[]
         <li key={index}>
           <h3>{ingredient.name}</h3>
           <p>
-            Necesitas {formatQuantity(ingredient.required_quantity)} {ingredient.unit}
-            {' · '}Disponible {formatQuantity(ingredient.available_quantity)} {ingredient.unit}
+            Necesitas {amount(ingredient.required_quantity, ingredient.unit)}
+            {' · '}Disponible {amount(ingredient.available_quantity, ingredient.unit)}
           </p>
           {ingredient.status === 'available'
             ? <span className="badge">Cantidad suficiente</span>
             : <span className="badge warning">
-              Faltan {formatQuantity(ingredient.shortfall_quantity)} {ingredient.unit}
+              Faltan {amount(ingredient.shortfall_quantity, ingredient.unit)}
               {ingredient.status === 'partial' ? ' · Hay parte de la cantidad' : ' · Sin existencias utilizables'}
             </span>}
         </li>
@@ -103,7 +104,7 @@ export default function Availability() {
         <div className="heading">
           <div>
             <h1>{selected.recipe_name}</h1>
-            <p className="muted">{selected.preparation_minutes} min · {selected.servings} raciones</p>
+            <p className="muted">{selected.preparation_minutes} min · {selected.servings} {selected.servings === 1 ? 'ración' : 'raciones'}</p>
           </div>
           <span className={'badge ' + (selected.classification === 'ready_to_cook' ? '' : 'warning')}>
             {classifications[selected.classification]}
@@ -111,7 +112,7 @@ export default function Availability() {
         </div>
         <article className="panel detail">
           <p><strong>{formatQuantity(selected.availability_percentage)} %</strong>
-            {' · '}{selected.available_count} de {selected.total_ingredients} ingredientes en cantidad suficiente.
+            {' · '}{selected.available_count} de {selected.total_ingredients} {selected.total_ingredients === 1 ? 'ingrediente' : 'ingredientes'} en cantidad suficiente.
           </p>
           <p className="muted">Cálculo del {selected.evaluated_on}. Se excluyen productos caducados y agotados.</p>
           {selected.total_ingredients === 0 && <p>Esta receta no tiene ingredientes registrados. Añádelos en Recetas para calcular su disponibilidad.</p>}
@@ -123,7 +124,7 @@ export default function Availability() {
           {selected.missing_or_insufficient_ingredients.length
             ? <IngredientList ingredients={selected.missing_or_insufficient_ingredients} />
             : <p>No falta ningún ingrediente registrado.</p>}
-          <p className="muted">Las cantidades se muestran en g, ml o unit. Las entradas equivalentes se agrupan. Consultar esta receta conserva las existencias.</p>
+          <p className="muted">Las cantidades se muestran en gramos, mililitros o unidades. Las entradas equivalentes se agrupan. Consultar esta receta conserva las existencias.</p>
         </article>
       </>
     )
@@ -131,10 +132,9 @@ export default function Availability() {
 
   return (
     <>
-      <div className="heading">
-        <div><h1>¿Qué puedo cocinar?</h1><p className="muted">Compara tus recetas con las existencias utilizables de tu despensa.</p></div>
+      <PageHeader title="¿Qué puedo cocinar?" description="Descubre qué recetas tienen los ingredientes que necesitas.">
         <button className="secondary" disabled={loading} onClick={() => setRefresh((count) => count + 1)}>Actualizar disponibilidad</button>
-      </div>
+      </PageHeader>
       <div className="filters">
         <label>Disponibilidad
           <select value={filter} onChange={(event) => setFilter(event.target.value)}>
@@ -150,17 +150,17 @@ export default function Availability() {
           </select>
         </label>
       </div>
-      <p className="muted">El porcentaje indica cuántos ingredientes tienen cantidad suficiente. Una receta está casi lista si solo falta o es insuficiente un ingrediente y al menos otro está disponible.</p>
-      {loading && <p role="status">Calculando disponibilidad…</p>}
+      <p className="notice">El porcentaje indica cuántos ingredientes tienen cantidad suficiente. Una receta está casi lista si solo falta o es insuficiente un ingrediente y al menos otro está disponible.</p>
+      {loading && <LoadingState text="Calculando disponibilidad…" />}
       {error && <p className="error" role="alert">{error} Puedes reintentar con «Actualizar disponibilidad».</p>}
       {!loading && !error && (visibleRecipes.length ? (
         <ul className="recipes">
           {visibleRecipes.map((recipe) => (
             <li className="panel" key={recipe.recipe_id}>
               <h2><button className="text-button" onClick={() => setSelected(recipe)}>{recipe.recipe_name}</button></h2>
-              <p className="muted">{recipe.preparation_minutes} min · {recipe.servings} raciones</p>
+              <p className="muted">{recipe.preparation_minutes} min · {recipe.servings} {recipe.servings === 1 ? 'ración' : 'raciones'}</p>
               <p><strong>{formatQuantity(recipe.availability_percentage)} %</strong>
-                {' · '}{recipe.available_count} de {recipe.total_ingredients} ingredientes suficientes
+                {' · '}{recipe.available_count} de {recipe.total_ingredients} {recipe.total_ingredients === 1 ? 'ingrediente suficiente' : 'ingredientes suficientes'}
               </p>
               <p><span className={'badge ' + (recipe.classification === 'ready_to_cook' ? '' : 'warning')}>
                 {classifications[recipe.classification]}
@@ -169,7 +169,7 @@ export default function Availability() {
               {recipe.missing_or_insufficient_ingredients.length > 0 && (
                 <ul className="shortfall-summary">
                   {recipe.missing_or_insufficient_ingredients.map((ingredient, index) => (
-                    <li key={index}>Faltan {formatQuantity(ingredient.shortfall_quantity)} {ingredient.unit} de {ingredient.name}</li>
+                    <li key={index}>Faltan {amount(ingredient.shortfall_quantity, ingredient.unit)} de {ingredient.name}</li>
                   ))}
                 </ul>
               )}
