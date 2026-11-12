@@ -53,23 +53,25 @@ Potential contributions include weekly meal planning, consumption ledgers, nutri
 
 Implementation and documentation used AI coding assistance through Codex. The applicant should confirm the required disclosure and eligibility wording under the program's current terms.
 
-Git repository creation, commit history, and an account's ability to publish do not by themselves establish legal ownership. No personal identity, sole-ownership claim, or prior contributor details are supplied here.
+Git repository creation, commit history, and an account's ability to publish do not by themselves establish legal ownership. The applicant must still verify identity, ownership assertions, and contributor details for the submission. The confirmed copyright attribution is recorded below.
 
-## License information requiring applicant confirmation
+## Confirmed license information
 
-No project LICENSE file is present. Project licensing remains undecided. Third-party dependencies retain their own license terms.
+Despensa is licensed under the [MIT License](LICENSE).
 
-- [ ] Confirm the authorized rightsholder and project license decision.
-- [ ] Confirm the copyright attribution before adding any license text.
-- [ ] Confirm any licensing requirement in the program's submission terms.
+Copyright (c) 2026 Raúl García Bejarano
 
-MIT is a suggested permissive option, pending authorization. It permits broad reuse subject to notice retention and includes a warranty disclaimer. [MIT reference](https://choosealicense.com/licenses/mit/)
+The user authorized the MIT license and supplied this copyright attribution. Third-party dependencies retain their own license terms.
+
+- [x] MIT project license authorized by the user.
+- [x] Copyright attribution confirmed as shown above.
+- [ ] Confirm any additional licensing requirement in the program's submission terms.
 
 ## Collaboration possibilities
 
 Contributors could work on targeted frontend tests, pagination, import validation, meal-planning APIs, stock movement history, household isolation, or deployment tooling. Changes should preserve existing data, deterministic matching, and transactional inventory behavior.
 
-Contribution licensing terms should be agreed with the confirmed rightsholder. The applicant must supply any requested availability or time commitment.
+Contributions should respect the MIT license and applicable third-party terms. The applicant must supply any requested availability or time commitment.
 
 ## Known limitations
 

@@ -181,12 +181,12 @@ Discuss a scoped change and the contribution licensing terms with the maintainer
 
 ## License
 
-No project license has been selected. Dependency license metadata does not license this application. The confirmed rightsholder must approve any project license.
+Despensa is licensed under the [MIT License](LICENSE).
 
-MIT is a suggested option for broad reuse, including commercial use, with copyright and permission notices retained and a warranty disclaimer. This is a recommendation pending authorization. [MIT license reference](https://choosealicense.com/licenses/mit/)
+Copyright (c) 2026 Raúl García Bejarano
 
-Public visibility alone does not establish general open-source reuse permissions. [GitHub licensing guidance](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository)
+Third-party dependencies retain their own license terms.
 
 ## Submission preparation
 
-[ALIGNERR_SUBMISSION.md](ALIGNERR_SUBMISSION.md) contains a factual submission draft with ownership, licensing, and applicant details requiring confirmation. The Alignerr form has not been submitted.
+[ALIGNERR_SUBMISSION.md](ALIGNERR_SUBMISSION.md) contains a factual submission draft with the confirmed MIT license and ownership and applicant details requiring confirmation. The Alignerr form has not been submitted.
