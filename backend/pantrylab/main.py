@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -8,10 +8,11 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import Session
 
+from .availability import evaluate_recipes
 from .inventory import inventory_router
 from .migrations import migrate_database
-from .models import Recipe
-from .schemas import RecipeInput, RecipeResponse
+from .models import InventoryItem, Recipe
+from .schemas import RecipeAvailability, RecipeInput, RecipeResponse
 
 DATABASE_PATH = Path(__file__).resolve().parents[1] / "data" / "pantrylab.sqlite3"
 RecipeId = Annotated[int, PathParameter(gt=0, le=2**63 - 1)]
@@ -29,13 +30,19 @@ def create_app(database_path: Path = DATABASE_PATH) -> FastAPI:
         finally:
             engine.dispose()
 
-    app = FastAPI(title="Despensa", version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title="Despensa", version="0.3.0", lifespan=lifespan)
 
     def get_session():
         with Session(engine, expire_on_commit=False) as session:
             yield session
 
     app.include_router(inventory_router(get_session))
+
+    @app.get("/recipes/availability", response_model=list[RecipeAvailability], tags=["Recipe availability"])
+    def get_availability(session: Session = Depends(get_session)):
+        recipes = session.scalars(select(Recipe).order_by(Recipe.id)).all()
+        inventory = session.scalars(select(InventoryItem)).all()
+        return evaluate_recipes(recipes, inventory, date.today())
 
     def find_recipe(recipe_id: int, session: Session) -> Recipe:
         recipe = session.get(Recipe, recipe_id)

@@ -18,7 +18,7 @@ interface InventoryItem extends InventoryInput {
 }
 
 export function formatQuantity(value: string) {
-  return value.includes('.') ? value.replace(/0+$/, '').replace(/\.$/, '') : value
+  return value.includes('.') && !/[eE]/.test(value) ? value.replace(/0+$/, '').replace(/\.$/, '') : value
 }
 
 function InventoryForm({ item, onSave, onCancel }: {

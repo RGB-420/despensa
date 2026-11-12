@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { deleteRecipe, errorMessage, getRecipe, listRecipes, type Recipe } from './api'
 import RecipeForm from './RecipeForm'
 import Inventory from './Inventory'
+import Availability from './Availability'
 
 type View =
   | { page: 'list' | 'create' }
@@ -142,7 +143,7 @@ function RecipeManager() {
 
 
 export default function App() {
-  const [section, setSection] = useState<'recipes' | 'inventory'>('recipes')
+  const [section, setSection] = useState<'recipes' | 'inventory' | 'availability'>('recipes')
   return (
     <>
       <header className="site-header">
@@ -153,11 +154,15 @@ export default function App() {
               onClick={() => setSection('recipes')}>Recetas</button>
             <button className={section === 'inventory' ? '' : 'secondary'} aria-current={section === 'inventory' ? 'page' : undefined}
               onClick={() => setSection('inventory')}>Mi despensa</button>
+            <button className={section === 'availability' ? '' : 'secondary'} aria-current={section === 'availability' ? 'page' : undefined}
+              onClick={() => setSection('availability')}>¿Qué puedo cocinar?</button>
           </nav>
         </div>
       </header>
       <main className="shell">
-        {section === 'recipes' ? <RecipeManager /> : <Inventory />}
+        {section === 'recipes' && <RecipeManager />}
+        {section === 'inventory' && <Inventory />}
+        {section === 'availability' && <Availability />}
       </main>
     </>
   )

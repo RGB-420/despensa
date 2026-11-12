@@ -1,9 +1,13 @@
+import re
 from datetime import date, timedelta
 from decimal import Decimal
-import re
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, computed_field, field_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints, computed_field, field_validator
+
+from .units import normalize_unit
+
+Unit = Annotated[Literal["g", "kg", "ml", "l", "unit"], BeforeValidator(normalize_unit)]
 
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
 PositiveInteger = Annotated[int, Field(strict=True, gt=0, le=9_999_999)]
@@ -12,7 +16,7 @@ PositiveInteger = Annotated[int, Field(strict=True, gt=0, le=9_999_999)]
 class Ingredient(BaseModel):
     name: Name
     quantity: float = Field(strict=True, gt=0, allow_inf_nan=False)
-    unit: Literal["g", "kg", "ml", "l", "unit"]
+    unit: Unit
 
 
 class RecipeInput(BaseModel):
@@ -38,7 +42,7 @@ StockQuantity = Annotated[Decimal, Field(ge=0, max_digits=18, decimal_places=6, 
 class InventoryInput(BaseModel):
     name: Name
     quantity: StockQuantity
-    unit: Literal["g", "kg", "ml", "l", "unit"]
+    unit: Unit
     expiration_date: date | None = None
     minimum_stock: StockQuantity | None = None
 
@@ -65,7 +69,6 @@ class InventoryResponse(InventoryInput):
     created_at: str
     updated_at: str
 
-
     @computed_field
     @property
     def expiration_status(self) -> Literal["expired", "expiring_soon", "fresh", "no_date"]:
@@ -86,3 +89,29 @@ class InventoryResponse(InventoryInput):
         if self.minimum_stock is not None and self.quantity <= self.minimum_stock:
             return "low_stock"
         return "in_stock"
+
+
+class IngredientAvailability(BaseModel):
+    name: str
+    unit: Literal["g", "ml", "unit"]
+    required_quantity: Decimal
+    available_quantity: Decimal
+    shortfall_quantity: Decimal
+    status: Literal["available", "partial", "missing"]
+
+
+class RecipeAvailability(BaseModel):
+    recipe_id: int
+    recipe_name: str
+    preparation_minutes: int
+    servings: int
+    evaluated_on: date
+    classification: Literal["ready_to_cook", "almost_ready", "missing_ingredients"]
+    availability_percentage: Decimal
+    total_ingredients: int
+    available_count: int
+    partial_count: int
+    missing_count: int
+    shortfall_count: int
+    available_ingredients: list[IngredientAvailability]
+    missing_or_insufficient_ingredients: list[IngredientAvailability]

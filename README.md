@@ -1,26 +1,23 @@
 # Despensa
 
-Despensa is a local personal kitchen application whose current version provides a recipe manager and persistent pantry inventory. You can create, browse, search, edit, and delete recipes. Each recipe includes preparation time, servings, ingredients with quantities and units, instructions, and creation and modification timestamps.
+Despensa is a local personal kitchen application with a recipe manager, pantry inventory, and a deterministic recipe availability engine. It helps you record what you have and see which recipes have enough usable ingredients.
 
-The frontend uses React, TypeScript, Vite, and plain CSS. The API uses Python, FastAPI, SQLAlchemy, and SQLite. Pytest covers the API.
+The frontend uses React, TypeScript, Vite, and plain CSS. The API uses Python, FastAPI, SQLAlchemy, and SQLite. Pytest covers the backend.
 
 ## Implemented features
 
-- Create, list, view, edit, and delete recipes with delete confirmation.
-- Search recipe names without case sensitivity.
-- Record preparation time, servings, instructions, and ingredients with quantities and fixed units.
-- Persist recipes in SQLite with creation and modification timestamps.
-- Use a responsive interface with loading, error, and empty states and form validation.
-
-## Pantry inventory in V0.2
-
-Use **Mi despensa** to add, edit, delete, search, and filter products or batches. Each entry records a quantity, unit, optional expiration date, and optional minimum stock. The interface highlights expired, soon-to-expire, low-stock, and out-of-stock entries. Quantities may be zero.
-
-At backend startup, an additive, repeatable migration creates the inventory table and records SQLite schema version 2. Existing recipe rows and their ingredients remain in place. See [API.md](API.md) for endpoint and filter details.
+- Create, list, view, edit, delete, and search recipes.
+- Record preparation time, servings, instructions, and ingredient quantities and units.
+- Manage products or batches in **Mi despensa**, including optional expiration dates and minimum stock.
+- Search inventory and filter expired, soon-to-expire, low-stock, and out-of-stock products.
+- Use **¿Qué puedo cocinar?** to compare recipes with usable inventory.
+- Filter availability by ready, almost ready, or missing ingredients. Sort by availability, number of ingredients still needed, or preparation time.
+- View required, available, and shortfall quantities for each ingredient.
+- Persist recipes and inventory with UTC creation and modification timestamps.
 
 ## Install on Windows
 
-Use Python 3.11 or newer and Node.js 22.12 or newer with npm. Run these commands in PowerShell from the repository root.
+Use Python 3.11 or newer and Node.js 22.12 or newer with npm.
 
 ```powershell
 git clone https://github.com/RGB-420/despensa.git
@@ -47,7 +44,17 @@ Set-Location frontend
 npm.cmd run dev
 ```
 
-Open [the recipe notebook](http://localhost:5173) or [the API documentation](http://127.0.0.1:8765/docs). SQLite creates the database at `backend/data/pantrylab.sqlite3` on first startup.
+Open [Despensa](http://localhost:5173) or [the API documentation](http://127.0.0.1:8765/docs). SQLite uses `backend/data/pantrylab.sqlite3`. Startup applies a repeatable, additive migration that creates the inventory table and records schema version 2. Existing recipes and their ingredients stay in place. V0.3 requires no further schema change.
+
+## Try the main workflow
+
+1. Create a recipe with 250 g of rice.
+2. Add 0.2 kg of Rice in **Mi despensa**.
+3. Open **¿Qué puedo cocinar?**. The detail shows 200 g available and a 50 g shortfall.
+4. Add another 50 g batch and revisit availability. The recipe is ready.
+5. Give that second batch a past expiration date. It stops counting toward availability.
+
+Availability is recalculated on entering its section or pressing its refresh button. Viewing a recipe preserves stock.
 
 ## Validate
 
@@ -61,22 +68,35 @@ npm.cmd run build
 Pop-Location
 ```
 
-The tests use separate temporary SQLite databases. With the API running, `npm.cmd run preview` from the frontend directory serves the production build locally.
+Tests use separate temporary SQLite databases. If Windows denies access to its shared temporary directory, choose a new test-only directory.
 
-## Current limitations
+```powershell
+Push-Location backend
+New-Item -ItemType Directory -Force .tmp | Out-Null
+$testRun = Join-Path .tmp ([guid]::NewGuid().ToString('N'))
+..\.venv\Scripts\python.exe -m pytest --basetemp $testRun -o cache_dir=.tmp/pytest-cache
+Pop-Location
+```
 
-The app is intended for local, single-user use. The list and name search load recipes without pagination. Ingredients belong to individual recipes and use the fixed units `g`, `kg`, `ml`, `l`, and `unit`. There is no global ingredient catalog or unit conversion. Inventory entries are independent batches. See [ROADMAP.md](ROADMAP.md) for future milestones.
+With the backend running, `npm.cmd run preview` from the frontend directory serves the production build locally. See [API.md](API.md) and [ARCHITECTURE.md](ARCHITECTURE.md) for the endpoint contracts and implementation.
+
+## Matching rules and limitations
+
+Names are matched after case folding, accent removal, and whitespace normalization. A small documented alias table supports specific plural and English/Spanish spellings. Similar names and different product descriptions remain distinct. Quantities are compared with Decimal, using only compatible kg/g, l/ml, and individual-unit conversions.
+
+Usable batches with the same normalized name and measurement dimension are summed. Repeated recipe lines are grouped using the same keys, so inventory is counted once per requirement. Each recipe is evaluated independently. Expired products and zero quantities are excluded. Products expiring today or lacking an expiration date can count.
+
+Availability percentage is the fraction of grouped ingredients with their full required quantity, rounded to two decimal places. Partial stock does not count as a fully available ingredient. Almost ready means exactly one ingredient has a shortfall and at least one other ingredient is sufficient.
+
+This app is intended for local, single-user use. Lists have no pagination. Aliases are maintained in code. Inventory quantities accept up to six decimal places and eighteen total digits. The app does not infer densities, fuzzy synonyms, ingredient substitutions, or shared meal allocations.
 
 ## Planned development
 
-Future milestones will add recipe availability matching, grocery purchases, recipe costs and inventory consumption, receipt scanning, and optional meal planning.
-
 | Version | Planned feature |
 | --- | --- |
-| V0.3 | Recipe availability matching |
-| V0.4 | Grocery purchase planning |
-| V0.5 | Recipe costs and inventory consumption |
+| V0.4 | Grocery purchase planning from recipe shortfalls |
+| V0.5 | Recipe costs and explicit inventory consumption |
 | V0.6 | Receipt scanning |
 | V0.7 | Optional meal planning |
 
-See [ROADMAP.md](ROADMAP.md) for the milestone scope.
+See [ROADMAP.md](ROADMAP.md) for version status.
