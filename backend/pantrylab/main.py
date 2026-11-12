@@ -27,7 +27,7 @@ def create_app(database_path: Path = DATABASE_PATH) -> FastAPI:
         finally:
             engine.dispose()
 
-    app = FastAPI(title="PantryLab", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Despensa", version="0.1.0", lifespan=lifespan)
 
     def get_session():
         with Session(engine, expire_on_commit=False) as session:

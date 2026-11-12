@@ -65,7 +65,7 @@ export default function App() {
     <>
       <header className="site-header">
         <div className="shell">
-          <span className="brand">PantryLab</span>
+          <span className="brand">Despensa</span>
           <span className="muted">Recipe notebook</span>
         </div>
       </header>

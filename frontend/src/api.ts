@@ -28,7 +28,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     response = await fetch('/api/recipes' + path, options)
   } catch (error) {
     if (options?.signal?.aborted) throw error
-    throw new Error('Could not reach PantryLab. Check that the backend is running.')
+    throw new Error('Could not reach Despensa. Check that the backend is running.')
   }
 
   if (!response.ok) {
@@ -37,7 +37,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     if (response.status === 422) {
       throw new Error('Check the recipe fields and ingredient values, then try again.')
     }
-    throw new Error('PantryLab could not complete the request. Check that the backend is running and try again.')
+    throw new Error('Despensa could not complete the request. Check that the backend is running and try again.')
   }
   if (response.status === 204) return undefined as T
   return response.json()

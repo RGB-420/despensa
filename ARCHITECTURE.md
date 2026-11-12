@@ -1,4 +1,4 @@
-# PantryLab architecture
+# Despensa architecture
 
 ## Project structure
 

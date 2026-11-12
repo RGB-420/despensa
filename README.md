@@ -1,6 +1,6 @@
-# PantryLab
+# Despensa
 
-PantryLab is a local recipe notebook for a personal kitchen. V0.1-A lets you create, browse, search, edit, and delete recipes. Each recipe includes preparation time, servings, ingredients with quantities and units, instructions, and creation and modification timestamps.
+Despensa is a local personal kitchen application whose current version provides a recipe manager. You can create, browse, search, edit, and delete recipes. Each recipe includes preparation time, servings, ingredients with quantities and units, instructions, and creation and modification timestamps.
 
 The frontend uses React, TypeScript, Vite, and plain CSS. The API uses Python, FastAPI, SQLAlchemy, and SQLite. Pytest covers the API.
 
@@ -63,7 +63,7 @@ The app is intended for local, single-user use. The list and name search load re
 
 ## Planned development
 
-The following milestones describe future development.
+Future milestones will extend Despensa with pantry inventory, grocery purchases, meal recommendations, recipe costs and inventory consumption, receipt scanning, and optional meal planning.
 
 | Version | Planned feature |
 | --- | --- |

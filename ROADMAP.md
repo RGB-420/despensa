@@ -1,4 +1,4 @@
-# PantryLab roadmap
+# Despensa roadmap
 
 | Version | Planned scope |
 | --- | --- |
